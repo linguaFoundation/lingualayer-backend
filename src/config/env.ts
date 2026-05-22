@@ -16,3 +16,5 @@ export const config = {
   apiPrefix: raw.API_PREFIX,
   corsOrigin: raw.CORS_ORIGIN,
 };
+
+// improvement #9
