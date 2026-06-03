@@ -7,3 +7,5 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
     timestamp: new Date().toISOString(),
   }));
 };
+
+// improvement #15
