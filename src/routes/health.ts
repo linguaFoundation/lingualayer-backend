@@ -13,3 +13,5 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
 // improvement #21
 
 // improvement #22
+
+// improvement #25
