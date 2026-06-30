@@ -17,3 +17,5 @@ export const v1Routes: FastifyPluginAsync = async (app) => {
 // improvement #19
 
 // improvement #27
+
+// improvement #29
