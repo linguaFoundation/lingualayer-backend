@@ -20,3 +20,5 @@ export const config = {
 // improvement #9
 
 // improvement #14
+
+// improvement #32
