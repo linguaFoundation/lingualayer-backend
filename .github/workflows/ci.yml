@@ -1,17 +1,37 @@
 name: CI
+
 on:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+
 jobs:
   build:
+    name: Typecheck, build, test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install || true
-      - run: npm run build --if-present || true
-      - run: npm run lint --if-present || true
+          cache: npm
+
+      # `npm ci` rather than `npm install`: it installs exactly what the
+      # lockfile pins and fails if the two have drifted, which is what a CI
+      # run wants to know.
+      - name: Install dependencies
+        run: npm ci
+
+      # Every step below used to end in `|| true`, so the job reported success
+      # no matter what happened. main had been unable to compile for some time
+      # and CI stayed green throughout.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test

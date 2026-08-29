@@ -1,16 +1,11 @@
 import type { FastifyPluginAsync } from "fastify";
-import { sep010Routes } from "../sep010.js";
 import { commissionRoutes } from "./commissions.js";
+import { contributorRoutes } from "./contributors.js";
 import { qualityRoutes } from "./quality.js";
 import { reportRoutes } from "./reports.js";
 import { rolesRoutes } from "./roles.js";
-import { sep010Routes } from "../sep010.js";
-import { commissionRoutes } from "./commissions.js";
 import { txRoutes } from "./tx.js";
-import { qualityRoutes } from "./quality.js";
-import { commissionRoutes } from "./commissions.js";
 import { walletConfigRoutes } from "./wallet-config.js";
-import { contributorRoutes } from "./contributors.js";
 
 export const v1Routes: FastifyPluginAsync = async (app) => {
   app.get("/meta", async () => ({
@@ -19,26 +14,17 @@ export const v1Routes: FastifyPluginAsync = async (app) => {
     description: "REST facade for Soroban contracts and indexers (scaffold).",
   }));
 
-  await app.register(sep010Routes);
+  // sep010Routes is deliberately absent here: src/index.ts registers it at the
+  // root so the SEP-10 endpoints stay at /auth/*, which is where a
+  // stellar.toml WEB_AUTH_ENDPOINT points. Registering it in both places made
+  // it a duplicate route, and Fastify refuses to start on those.
   await app.register(commissionRoutes);
+  await app.register(contributorRoutes);
   await app.register(qualityRoutes);
   await app.register(reportRoutes);
-  // TODO: routes for contract invocation prep, webhook ingestion
-
   await app.register(rolesRoutes);
-  await app.register(sep010Routes);
-  await app.register(commissionRoutes);
   await app.register(txRoutes);
-
-  // TODO: routes for webhook ingestion, admin ops
   await app.register(walletConfigRoutes);
-  await app.register(contributorRoutes);
 
   // TODO: routes for contract invocation prep, webhook ingestion, admin ops
 };
-
-// improvement #17
-
-// improvement #19
-
-// improvement #27

@@ -1,5 +1,4 @@
 import type { FastifyPluginAsync } from "fastify";
-import { Horizon } from "@stellar/stellar-sdk";
 import {
   getCommissionById,
   upsertCommission,

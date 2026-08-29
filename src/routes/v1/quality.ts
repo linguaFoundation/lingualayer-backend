@@ -65,23 +65,7 @@ export const qualityRoutes: FastifyPluginAsync = async (app) => {
     };
   });
 
-  app.post("/quality/attest/prepare", async (req) => {
-    qualityOracleAttestationsTotal.inc();
-    // Prepare unsigned XDR for QualityOracle.attest_quality()
-    return { xdr: "" };
   app.post("/quality/attest/prepare", async (req, reply) => {
-    const { curator, score } = (req.body ?? {}) as { curator?: string; score?: number };
-    if (!curator || typeof score !== "number") {
-      return reply.status(400).send({ error: "curator and numeric score are required" });
-    }
-
-    qualityOracleAttestationsTotal.inc();
-    recordAttestation(curator, score);
-    // Prepare unsigned XDR for QualityOracle.attest_quality()
-    return { xdr: "" };
-
-  });
-
     const parsed = prepareBodySchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: "Invalid request body", details: parsed.error.flatten() });
@@ -150,6 +134,9 @@ export const qualityRoutes: FastifyPluginAsync = async (app) => {
     }
 
     tx = rpc.assembleTransaction(tx, sim).build();
+
+    qualityOracleAttestationsTotal.inc();
+    recordAttestation(body.curator_address, body.score);
 
     return { xdr: tx.toXDR() };
   });
