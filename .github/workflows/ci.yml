@@ -10,6 +10,9 @@ jobs:
   build:
     name: Typecheck, build, test
     runs-on: ubuntu-latest
+    # Without this a hung step runs for GitHub's six-hour default before
+    # anyone finds out.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 

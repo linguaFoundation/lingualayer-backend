@@ -11,7 +11,7 @@
     "db:backup": "bash scripts/backup.sh",
     "db:restore": "tsx scripts/restore.ts",
     "db:backup-health-check": "tsx scripts/backup-health-check.ts",
-    "test": "tsx --test $(find src -name '*.test.ts' | sort)",
+    "test": "tsx --test --test-timeout=30000 $(find src -name '*.test.ts' | sort)",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
