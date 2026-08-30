@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { commissionRoutes } from "./commissions.js";
 import { contributorRoutes } from "./contributors.js";
+import { datasetRoutes } from "./datasets.js";
 import { qualityRoutes } from "./quality.js";
 import { reportRoutes } from "./reports.js";
 import { rolesRoutes } from "./roles.js";
@@ -21,6 +22,7 @@ export const v1Routes: FastifyPluginAsync = async (app) => {
   // it a duplicate route, and Fastify refuses to start on those.
   await app.register(commissionRoutes);
   await app.register(contributorRoutes);
+  await app.register(datasetRoutes);
   await app.register(qualityRoutes);
   await app.register(reportRoutes);
   await app.register(rolesRoutes);
