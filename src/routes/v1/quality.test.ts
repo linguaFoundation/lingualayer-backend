@@ -2,9 +2,9 @@ import test from "node:test";
 import assert from "node:assert";
 import Fastify from "fastify";
 import { qualityRoutes } from "./quality.js";
-import { resetCuratorStats } from "../../services/curator-stats.js";
+import { recordAttestation, resetCuratorStats } from "../../services/curator-stats.js";
 
-test("POST /quality/attest/prepare requires curator and score", async () => {
+test("POST /quality/attest/prepare rejects an empty body", async () => {
   const app = Fastify();
   await app.register(qualityRoutes);
 
@@ -17,11 +17,12 @@ test("GET /quality/leaderboard reflects recorded attestations", async () => {
   const app = Fastify();
   await app.register(qualityRoutes);
 
-  await app.inject({
-    method: "POST",
-    url: "/quality/attest/prepare",
-    payload: { curator: "GABC", score: 90 },
-  });
+  // Recorded directly rather than by posting to /quality/attest/prepare: that
+  // route now only records once the attestation has simulated successfully
+  // against QualityOracle, so driving it from here would need a configured
+  // contract and a live Soroban RPC. The endpoint under test is the
+  // leaderboard, so the stats are seeded through the service it reads.
+  recordAttestation("GABC", 90);
 
   const res = await app.inject({ method: "GET", url: "/quality/leaderboard" });
   assert.strictEqual(res.statusCode, 200);

@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { registry } from "../metrics.js";
+import { registry, renderMetrics } from "../metrics.js";
 
 // Readiness state: false until the process has finished whatever startup
 // work makes it safe to receive traffic (e.g. the indexer has caught up).
@@ -11,17 +11,16 @@ export function setReady(value: boolean) {
 }
 
 export const healthRoutes: FastifyPluginAsync = async (app) => {
-  app.get("/health", async () => ({
-    status: "ok",
-    service: "api",
-    timestamp: new Date().toISOString(),
-  }));
-
+  // src/metrics.ts carries two registries: the prom-client one holding the
+  // indexer counters, and a hand-rolled text exposition fed by the onResponse
+  // hook in src/index.ts. Both are scraped from this single route — the two
+  // copies of /metrics that existed before were a duplicate route, which
+  // Fastify refuses to start on.
   app.get("/metrics", async (_req, reply) => {
     reply.header("Content-Type", registry.contentType);
-    return registry.metrics();
+    return `${renderMetrics()}\n${await registry.metrics()}`;
   });
-};
+
   app.get("/health", async (_req, reply) => {
     const body = {
       status: ready ? "ok" : "degraded",
@@ -49,11 +48,3 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
     return { status: "ready" };
   });
 };
-
-// improvement #21
-
-// improvement #22
-
-// improvement #25
-
-// improvement #30

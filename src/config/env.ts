@@ -19,20 +19,16 @@ const schema = z.object({
   SEP10_HOME_DOMAIN: z.string().default("lingualayer.app"),
   SEP10_WEB_AUTH_DOMAIN: z.string().optional(),
   SEP10_CHALLENGE_TIMEOUT_SECONDS: z.coerce.number().default(300),
-  JWT_SECRET: z.string().default("dev-insecure-jwt-secret-change-me"),
   JWT_TTL_SECONDS: z.coerce.number().default(3600),
 
   // DataCommission event indexer (GET /commissions, GET /commissions/:id)
-  SOROBAN_RPC_URL: z.string().optional(),
+  SOROBAN_RPC_URL: z.string().default("https://soroban-testnet.stellar.org"),
   DATA_COMMISSION_CONTRACT_ID: z.string().optional(),
   COMMISSION_INDEXER_POLL_INTERVAL_MS: z.coerce.number().default(5000),
 
   // Commission fulfilment notification emails (POST /commissions/:id/fulfil)
   SENDGRID_API_KEY: z.string().optional(),
   SENDGRID_FROM_EMAIL: z.string().default("notifications@lingualayer.app"),
-  DATA_COMMISSION_CONTRACT_ID: z.string().optional(),
-  COMMISSION_INDEXER_POLL_INTERVAL_MS: z.coerce.number().default(5000),
-  SOROBAN_RPC_URL: z.string().default("https://soroban-testnet.stellar.org"),
   DATASET_REGISTRY_CONTRACT_ID: z.string().optional(),
   LICENSE_CONTRACT_ID: z.string().optional(),
 });
@@ -41,7 +37,6 @@ const raw = schema.parse(process.env);
 
 export const config = {
   nodeEnv: raw.NODE_ENV,
-  jwtSecret: raw.JWT_SECRET,
   port: raw.PORT,
   apiPrefix: raw.API_PREFIX,
   rateLimitPublicMax: raw.RATE_LIMIT_PUBLIC_MAX,

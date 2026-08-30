@@ -10,7 +10,7 @@ import { sep010Routes } from "./routes/sep010.js";
 import { v1Routes } from "./routes/v1/index.js";
 import { wsRoutes } from "./routes/ws.js";
 import { startCommissionIndexer } from "./services/commission-indexer.js";
-import { recordHttpRequest, renderMetrics } from "./metrics.js";
+import { recordHttpRequest } from "./metrics.js";
 
 const SHUTDOWN_DRAIN_MS = 15_000;
 
@@ -40,11 +40,6 @@ async function buildServer() {
   await app.register(websocket);
   app.addHook("onResponse", async (req, reply) => {
     recordHttpRequest(req.routeOptions?.url ?? req.url, reply.statusCode);
-  });
-
-  app.get("/metrics", async (_req, reply) => {
-    reply.header("Content-Type", "text/plain; version=0.0.4");
-    return renderMetrics();
   });
 
   await app.register(healthRoutes);
@@ -83,7 +78,7 @@ function registerGracefulShutdown(app: Awaited<ReturnType<typeof buildServer>>) 
 }
 
 buildServer()
-  .then((app) => {
+  .then(async (app) => {
     if (config.sorobanRpcUrl && config.dataCommissionContractId) {
       startCommissionIndexer({
         rpcUrl: config.sorobanRpcUrl,
@@ -95,11 +90,11 @@ buildServer()
         "SOROBAN_RPC_URL/DATA_COMMISSION_CONTRACT_ID not set — commission indexer disabled",
       );
     }
-    return app.listen({ port: config.port, host: "0.0.0.0" });
-  });
 
-  .then(async (app) => {
+    // Registered before listening so a SIGTERM arriving mid-startup still
+    // takes the drain path rather than killing in-flight requests.
     registerGracefulShutdown(app);
+
     await app.listen({ port: config.port, host: "0.0.0.0" });
   })
   .catch((err) => {

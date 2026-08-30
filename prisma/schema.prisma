@@ -1,0 +1,165 @@
+// LinguaLayer data model.
+//
+// The four tables at the bottom of this file (quality_attestations, curators,
+// dataset_quality, indexer_cursors) already exist and are created by
+// src/db/schema.sql at indexer startup. They are declared here so that Prisma
+// has a complete picture of the database: without them `prisma migrate` treats
+// them as drift and generates a migration that drops them.
+//
+// See prisma/README.md for the baselining procedure on a database that already
+// has those tables.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A registered dataset, mirrored from the DatasetRegistry contract.
+model Dataset {
+  /// Contract-assigned id, not a database sequence — the chain is the source
+  /// of truth and this table is a queryable projection of it.
+  id            String   @id
+  ownerId       String   @map("owner_id")
+  /// ISO 639-3, so three characters.
+  languageCode  String   @map("language_code") @db.Char(3)
+  name          String
+  metadataIpfs  String?  @map("metadata_ipfs")
+  version       Int      @default(1)
+  state         String   @default("active")
+  createdLedger Int      @map("created_ledger")
+  /// When this row was last written by the indexer, as distinct from when the
+  /// dataset was created on-chain.
+  indexedAt     DateTime @default(now()) @map("indexed_at") @db.Timestamptz(6)
+
+  contributors   Contributor[]
+  licenses       License[]
+  royaltyPayouts RoyaltyPayout[]
+
+  @@index([languageCode])
+  @@index([state])
+  @@index([ownerId])
+  @@index([languageCode, state])
+  @@map("datasets")
+}
+
+/// Revenue split for a dataset. Shares are basis points and should total
+/// 10000 across a dataset, but that is a contract invariant rather than one
+/// the database can enforce across rows.
+model Contributor {
+  id        String @id @default(uuid())
+  datasetId String @map("dataset_id")
+  address   String
+  shareBps  Int    @map("share_bps")
+
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  /// One row per address per dataset; a second share for the same contributor
+  /// would double-count them in a payout.
+  @@unique([datasetId, address])
+  @@index([address])
+  @@map("contributors")
+}
+
+/// A licence issued against a dataset.
+model License {
+  id             String   @id
+  datasetId      String   @map("dataset_id")
+  licensee       String
+  licenseType    String   @map("license_type")
+  /// Stroops, so 1e-7 XLM. BigInt because a large licence fee overflows the
+  /// 2^53 range a Float would give it.
+  feePaidStroops BigInt   @map("fee_paid_stroops")
+  expiryLedger   Int?     @map("expiry_ledger")
+  state          String   @default("active")
+  regionCode     String?  @map("region_code")
+  issuedAt       DateTime @default(now()) @map("issued_at") @db.Timestamptz(6)
+
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@index([datasetId])
+  @@index([licensee])
+  /// Serves "active licences for this dataset", which is the read the API does
+  /// most often.
+  @@index([datasetId, state])
+  @@map("licenses")
+}
+
+/// A royalty distribution event.
+model RoyaltyPayout {
+  id            String   @id @default(uuid())
+  datasetId     String   @map("dataset_id")
+  totalAmount   BigInt   @map("total_amount")
+  ledger        Int
+  distributedAt DateTime @default(now()) @map("distributed_at") @db.Timestamptz(6)
+
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@index([datasetId])
+  /// Payout history is read newest-first.
+  @@index([datasetId, distributedAt])
+  @@map("royalty_payouts")
+}
+
+/// Append-only record of state changes, for audit export.
+model AuditLog {
+  id        String   @id @default(uuid())
+  entity    String
+  action    String
+  actor     String
+  txHash    String?  @map("tx_hash")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([entity, createdAt])
+  @@index([actor])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Pre-existing tables, declared so Prisma does not plan to drop them.
+// Owned by src/db/schema.sql; change them there and mirror the change here.
+// ---------------------------------------------------------------------------
+
+model QualityAttestation {
+  id         Int       @id @default(autoincrement())
+  datasetId  String    @map("dataset_id")
+  curator    String
+  score      Int
+  rubricIpfs String?   @map("rubric_ipfs")
+  ledger     Int
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([datasetId, curator])
+  @@map("quality_attestations")
+}
+
+model Curator {
+  address          String    @id
+  registeredLedger Int       @map("registered_ledger")
+  slashed          Boolean   @default(false)
+  slashedLedger    Int?      @map("slashed_ledger")
+  createdAt        DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("curators")
+}
+
+model DatasetQuality {
+  datasetId        String    @id @map("dataset_id")
+  averageScore     Decimal   @default(0) @map("average_score") @db.Decimal(5, 2)
+  attestationCount Int       @default(0) @map("attestation_count")
+  updatedAt        DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("dataset_quality")
+}
+
+model IndexerCursor {
+  indexerName String    @id @map("indexer_name")
+  lastLedger  Int       @map("last_ledger")
+  updatedAt   DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("indexer_cursors")
+}
