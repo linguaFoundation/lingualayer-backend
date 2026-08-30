@@ -6,6 +6,7 @@ import { reportRoutes } from "./reports.js";
 import { rolesRoutes } from "./roles.js";
 import { txRoutes } from "./tx.js";
 import { walletConfigRoutes } from "./wallet-config.js";
+import { siwsAuthRoutes } from "./auth-siws.js";
 
 export const v1Routes: FastifyPluginAsync = async (app) => {
   app.get("/meta", async () => ({
@@ -25,6 +26,11 @@ export const v1Routes: FastifyPluginAsync = async (app) => {
   await app.register(rolesRoutes);
   await app.register(txRoutes);
   await app.register(walletConfigRoutes);
+
+  // Sign-In With Stellar, mounted under the API prefix as /api/v1/auth/*.
+  // Distinct from the SEP-10 flow at /auth/*, which src/index.ts registers
+  // at the root for ecosystem clients.
+  await app.register(siwsAuthRoutes);
 
   // TODO: routes for contract invocation prep, webhook ingestion, admin ops
 };
