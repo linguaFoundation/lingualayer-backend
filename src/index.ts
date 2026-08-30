@@ -10,6 +10,7 @@ import { sep010Routes } from "./routes/sep010.js";
 import { v1Routes } from "./routes/v1/index.js";
 import { wsRoutes } from "./routes/ws.js";
 import { startCommissionIndexer } from "./services/commission-indexer.js";
+import { startDatasetRegistryIndexer } from "./services/dataset-registry-indexer.js";
 import { recordHttpRequest } from "./metrics.js";
 
 const SHUTDOWN_DRAIN_MS = 15_000;
@@ -88,6 +89,17 @@ buildServer()
     } else {
       app.log.warn(
         "SOROBAN_RPC_URL/DATA_COMMISSION_CONTRACT_ID not set — commission indexer disabled",
+      );
+    }
+
+    if (config.sorobanRpcUrl && config.datasetRegistryContractId) {
+      startDatasetRegistryIndexer({
+        rpcUrl: config.sorobanRpcUrl,
+        contractId: config.datasetRegistryContractId,
+      });
+    } else {
+      app.log.warn(
+        "SOROBAN_RPC_URL/DATASET_REGISTRY_CONTRACT_ID not set — dataset registry indexer disabled",
       );
     }
 
