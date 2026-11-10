@@ -1,4 +1,8 @@
 import { registry } from "../metrics.js";
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+
 export const healthRoutes = async (app) => {
     app.get("/health", async () => ({
         status: "ok",
